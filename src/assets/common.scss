@@ -1,0 +1,10 @@
+.image-frame {
+    position: relative;
+    width: 640px;
+    height: 640px;
+    background-color: aquamarine;
+
+    img {
+        -webkit-user-drag: none;
+    }
+}
