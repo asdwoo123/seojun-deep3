@@ -1,6 +1,5 @@
 <template>
     <div class="home">
-      <div>{{  currentRoute  }}</div>
       <div>
         <a-radio-group v-model:value="mode">
           <a-radio-button @click="onTapClick('train')" value="train">Train</a-radio-button>
@@ -16,8 +15,8 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 
-const mode = ref('train')
 const router = useRouter()
+const mode = ref('train')
 
 function onTapClick(value) {
   router.push(`/${value}`)

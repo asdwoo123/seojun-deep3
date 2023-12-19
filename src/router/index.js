@@ -10,7 +10,7 @@ const routes = [
     component: HomeView,
     children: [
       {
-        path: '', component: Train
+        path: '', name: 'home.default', component: Train
       },
       {
         path: '/train', name: 'train', component: Train

@@ -1,3 +1,7 @@
+.overall-layout {
+    display: flex;
+}
+
 .image-frame {
     position: relative;
     width: 640px;
@@ -6,5 +10,19 @@
 
     img {
         -webkit-user-drag: none;
+    }
+}
+
+.tool-layout {
+    display: flex;
+    margin: 10px 0 0 20px;
+    align-items: center;
+
+    p {
+        margin: auto;
+    }
+
+    * {
+        flex: 1;
     }
 }
