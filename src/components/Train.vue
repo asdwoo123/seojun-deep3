@@ -2,14 +2,16 @@
   <div class="overall-layout">
     <div>
         <div class="image-frame" @mousedown="handleMouseDown" @mousemove="handleMouseMove" @mouseup="handleMouseUp">
-            <img :src="selectDataset.imagePath" alt="">
-            <div class="create-box" v-if="isClicking && endX !== 0"
-            :style="draggableInfo"
+            <img id="source-image" :src="selectDataset.imagePath || ''" alt="">
+            <div class="create-box" v-if="isCreateMode"
+            :style="bboxRectInfo"
              />
-             <vue-draggable-resizable
+             <Vue3DraggableResizable
               v-for="({x, y, w, h}, index) in selectBboxes"
               :style="bboxStyle(selectBboxes[index].no)"
-             :key="index" :w="w" :h="h" :x="x" :y="y" :parent="true"
+             :key="index"  :initW="w" :initH="h"
+             v-model:w="selectBboxes[index].w" v-model:h="selectBboxes[index].h" v-model:x="selectBboxes[index].x" v-model:y="selectBboxes[index].y"
+             :draggable="true" :resizable="true" :parent="true"
              @activated="activateBbox(index)" @deactivated="deactiveBbox" @resizing="onResize" @dragging="onDrag"
               />
         </div>
@@ -27,9 +29,9 @@
             <a-button danger class="tool-button" @click="deleteDataset">Delete dataset</a-button>
             <a-button danger class="tool-button" @click="createDataset">Create dataset</a-button>
         </div>
-        <div class="tool-layout" v-if="selectBboxes.length > 0">
+        <div class="tool-layout" v-if="selectBbox.hasOwnProperty('no')">
             <p>no: </p>
-            <a-input-number id="inputNumber" v-model:value="selectBbox.no" :min="0" :max="10" />
+            <a-input-number id="inputNumber" v-model:value="selectBbox.no" :min="0" :max="9" />
         </div>
         <div class="tool-layout">
           <p>save model name: </p>  
@@ -55,9 +57,9 @@
     <a-modal v-model:open="isTraining" 
     :footer="null" :centered="true">
         <div style="padding: 50px 0">
-            <a-progress :percent="percentage" :size="[300, 20]" />
+            <a-progress :percent="percent" :size="[300, 20]" />
             <div style="height: 20;" />
-            <p>{{ trainMessage }}</p>
+            <p>{{ stepToMessage }}</p>
         </div>
     </a-modal>
   </div>
@@ -80,7 +82,6 @@ const datasets = ref([{
     imagePath: streamUrl,
     bbox: []
 }])
-const isClicking = ref(false)
 const startX = ref(0)
 const startY = ref(0)
 const endX = ref(0)
@@ -92,11 +93,13 @@ const socket = ref({})
 const isTraining = ref(false)
 const trainMessage = ref('')
 const trainStep = ref(0)
-const percentage = ref(0)
+const percent = ref(0)
 const trainEpoch = ref(50)
 const batchSize = ref(2)
+const isCreateMode = ref(false)
+const step = ref(0)
 
-const draggableInfo = computed(() => ({
+const bboxRectInfo = computed(() => ({
     top: ((startY.value > endY.value) ? endY.value : startY.value) + 'px',
     left: ((startX.value > endX.value) ? endX.value : startX.value) + 'px',
     width: Math.abs(endX.value - startX.value) + 'px',
@@ -106,32 +109,46 @@ const draggableInfo = computed(() => ({
 const selectDataset = computed(() => datasets.value[datasetIndex.value])
 const selectBboxes = computed(() => selectDataset.value.bbox)
 const selectBbox = computed({
-    get: () => datasets.value[datasetIndex.value].bbox[bboxIndex.value],
-    set: (val) => {
-        datasets.value[datasetIndex.value].bbox[bboxIndex.value] = val
+ get: () => selectBboxes.value[bboxIndex.value] || {},
+ set: (newValue) => {
+  selectBboxes.value[bboxIndex.value] = newValue;
+ }
+});
+const stepToMessage = computed(() => {
+    let message
+    console.log(step.value)
+    switch(step.value) {
+        case 1:
+            message = '데이터셋 증강중...'
+            break
+        case 2:
+            message = '데이터셋 학습중...'
+            break
+        case 3:
+            message = '데이터셋 학습 완료'
+            break
+        default:
+            message = '이전 데이터셋 삭제중...'
     }
+    return message
 })
-
-function selectDataset() {
-    return datasets.value[datasetIndex.value]
-}
-
-function selectBboxes() {
-    return selectDataset().bbox
-}
-
-function selectBbox() {
-
-}
 
 function handleKeyDown(event) {
     const key = event.key
     if (key === 'Delete') deleteBbox()
+    if (key === 'Escape') createRectCancel()
+}
+
+function generateRainbowColor(number) {
+   var hue = number * 36;
+   return 'hsl(' + hue + ',100%,50%)';
 }
 
 function bboxStyle(no) {
+    const color = generateRainbowColor(no)
+
     return {
-        backgroundColor: `red`,
+        backgroundColor: color,
         opacity: 0.3
     }
 }
@@ -154,25 +171,12 @@ function previewActivateStyle(index) {
     } : ''
 }
 
-function checkCreateMode(event) {
-    return event.target.tagName === 'IMG'
+function checkImgFrame(event) {
+    return event.target.id === 'source-image'
+    // return event.target.tagName === 'IMG'
 }
 
-function handleMouseDown(event) {
-    if (!checkCreateMode(event)) return
-    isClicking.value = true
-    startX.value = event.offsetX
-    startY.value = event.offsetY
-}
-
-function handleMouseMove(event) {
-    if (!checkCreateMode(event) || !isClicking.value) return
-    endX.value = event.offsetX
-    endY.value = event.offsetY
-}
-
-function handleMouseUp(event) {
-    if (!checkCreateMode(event) || !isClicking.value) return
+function createBbox() {
     const x = ((startX.value > endX.value) ? endX.value : startX.value)
     const y = ((startY.value > endY.value) ? endY.value : startY.value)
     const w = Math.abs(endX.value - startX.value)
@@ -186,31 +190,49 @@ function handleMouseUp(event) {
         h, 
     })
     }
-    isClicking.value = false
-    startX.value = 0
-    startY.value = 0
-    endX.value = 0
-    endY.value = 0
 }
 
-function onResize(x, y, w, h) {
+function handleMouseDown(event) {
+    if (!checkImgFrame(event)) return
+    if (isCreateMode.value) {
+        createBbox()
+        isCreateMode.value = false
+    } else {
+        isCreateMode.value = true
+        startX.value = event.offsetX
+        startY.value = event.offsetY
+        endX.value = startX.value
+        endY.value = startY.value
+    }
+}
+
+function handleMouseMove(event) {
+    if (!checkImgFrame(event) || !isCreateMode.value) return
+    endX.value = event.offsetX
+    endY.value = event.offsetY
+}
+
+function createRectCancel() {
+    isCreateMode.value = false   
+}
+
+function onResize({x, y, w, h}) {
     selectBbox.value = {
         ...selectBbox.value,
         x,
         y,
         w,
         h
-    }
+ }
 }
 
-function onDrag(x, y) {
+function onDrag({x, y}) {
     selectBbox.value = {
         ...selectBbox.value,
         x,
         y
     }
 
-    console.log(selectBbox.value);
 }
 
 async function getCaptureImage(url) {
@@ -241,16 +263,18 @@ async function createDataset() {
 function deleteBbox() {
     if (selectBboxes.value.length < 1) return
     selectBboxes.value.splice(bboxIndex.value, 1)
+    bboxIndex.value = 0
 }
 
 function deleteDataset() {
     if (datasetIndex.value === 0) return
     datasets.value.splice(datasetIndex, 1)
+    datasetIndex.value = 0
 }
 
 function train() {
-    let datasets = datasets.value.slice(1)
-    datasets = datasets.map((dataset) => {
+    let trainDatasets = datasets.value.slice(1)
+    trainDatasets = trainDatasets.map((dataset) => {
         const image = dataset.imageBuffer
         const bboxes = dataset.bbox.map((bs) => 
         [bs.no, bs.x, bs.y, bs.x + bs.w, bs.y + bs.h])
@@ -259,15 +283,13 @@ function train() {
 
     if (socket.value.connected) {
         isTraining.value = true
-        socket.value.emit('train', { data: datasets })
+        socket.value.emit('train', { data: trainDatasets })
     }
 }
 
 onMounted(() => {
     window.addEventListener('keydown', handleKeyDown)
     socket.value = io(socketUrl)
-
-    console.log(socket.value)
     
     socket.value.on('connect', () => {
         console.log('socketio connect!');
@@ -277,14 +299,12 @@ onMounted(() => {
         trainMessage.value = msg
     })
 
-    socket.value.on('step', (step) => {
-        if (cnt > 99) isTraining.value = false
-        step.value = step
+    socket.value.on('step', (s) => {
+        step.value = s
     })
 
-    socket.value.on('count', (cnt) => {
-        if (cnt > 99) isTraining.value = false
-        percentage.value = cnt 
+    socket.value.on('percent', (per) => {
+        percent.value = per
     })
 })
 
