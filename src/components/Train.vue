@@ -73,11 +73,12 @@ const cameraUrl = 'http://192.168.0.178:3000/camera'
 const streamUrl = `${cameraUrl}/stream`
 const captureUrl = `${cameraUrl}/capture`
 const socketUrl = 'http://192.168.0.48:5000'
+const sampleUrl = 'https://upload.wikimedia.org/wikipedia/commons/e/ee/Sample_abc.jpg'
 
 const datasets = ref([{
     name: 'stream',
     imageBuffer: [],
-    imagePath: streamUrl,
+    imagePath: sampleUrl,
     bbox: []
 }])
 const isClicking = ref(false)
@@ -106,23 +107,18 @@ const draggableInfo = computed(() => ({
 const selectDataset = computed(() => datasets.value[datasetIndex.value])
 const selectBboxes = computed(() => selectDataset.value.bbox)
 const selectBbox = computed({
-    get: () => datasets.value[datasetIndex.value].bbox[bboxIndex.value],
+    get: () => selectBboxes.value[bboxIndex.value],
     set: (val) => {
-        datasets.value[datasetIndex.value].bbox[bboxIndex.value] = val
+        let bbox = datasets.value[datasetIndex.value].bbox[bboxIndex.value]
+        bbox = {
+            ...bbox,
+            ...val
+        }
+        console.log(bbox)
     }
 })
 
-function selectDataset() {
-    return datasets.value[datasetIndex.value]
-}
 
-function selectBboxes() {
-    return selectDataset().bbox
-}
-
-function selectBbox() {
-
-}
 
 function handleKeyDown(event) {
     const key = event.key
@@ -195,7 +191,6 @@ function handleMouseUp(event) {
 
 function onResize(x, y, w, h) {
     selectBbox.value = {
-        ...selectBbox.value,
         x,
         y,
         w,
@@ -205,12 +200,10 @@ function onResize(x, y, w, h) {
 
 function onDrag(x, y) {
     selectBbox.value = {
-        ...selectBbox.value,
         x,
         y
     }
 
-    console.log(selectBbox.value);
 }
 
 async function getCaptureImage(url) {
@@ -224,7 +217,7 @@ async function getCaptureImage(url) {
 
 async function createDataset() {
     if (datasetIndex.value !== 0) return
-    const buffer = await getCaptureImage(captureUrl)
+    const buffer = await getCaptureImage(sampleUrl)
     const base64Image = buffer.toString('base64')
     const base64Path = `data:image/jpeg;base64, ${base64Image}`
     const name = `data${datasets.value.length}`
@@ -297,6 +290,8 @@ onMounted(() => {
     height: 640px;
 
     img {
+        width: 100%;
+        height: 100%;
         position: absolute;
         top: 0;
         left: 0;
@@ -354,7 +349,4 @@ onMounted(() => {
     }
 }
 
-.train-option {
-    
-}
 </style>
