@@ -88,6 +88,11 @@ def on_train(json):
     em('step', 0)
     utilities.delete_prev_dataset()
     em('step', 1)
+    datasetAug.aug()    
+    em('step', 2)
+    yoloNasTrain.train()
+    time.sleep(1)
+    em('step', 3)
 
     
 
