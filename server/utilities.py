@@ -3,6 +3,14 @@ from pyee import EventEmitter
 
 em = EventEmitter()
 
+def create_array(n):
+   return [str(i) for i in range(n)]
+
+def searchFolderNames(path):
+    all_items = os.listdir(path)
+    folder_names = [item for item in all_items if os.path.isdir(os.path.join(path, item))]
+    return folder_names
+
 def delete_prev_dataset(dataset_dir):
     for root, _, files in os.walk(dataset_dir):
         for file in files:
