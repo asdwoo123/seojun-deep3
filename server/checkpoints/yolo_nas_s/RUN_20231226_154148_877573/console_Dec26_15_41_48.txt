@@ -1,0 +1,25 @@
+============================================================
+New run started at 2023-12-26.15:41:31.806884
+sys.argv: "server.py"
+============================================================
+The console stream is logged into C:\Users\seojuneng\sg_logs\console.log
+socketio connect!
+
+Indexing dataset annotations:   0%|                                                                                                                                                      | 0/67 [00:00<?, ?it/s]
+Indexing dataset annotations:  15%|█████████████████████                                                                                                                        | 10/67 [00:00<00:00, 92.92it/s]
+Indexing dataset annotations:  34%|████████████████████████████████████████████████                                                                                            | 23/67 [00:00<00:00, 105.38it/s]
+Indexing dataset annotations:  51%|███████████████████████████████████████████████████████████████████████▌                                                                     | 34/67 [00:00<00:00, 99.96it/s]
+Indexing dataset annotations:  70%|██████████████████████████████████████████████████████████████████████████████████████████████████▏                                         | 47/67 [00:00<00:00, 110.51it/s]
+Indexing dataset annotations:  88%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████▎                | 59/67 [00:00<00:00, 107.44it/s]
+Indexing dataset annotations: 100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 67/67 [00:00<00:00, 104.50it/s]
+
+Indexing dataset annotations:   0%|                                                                                                                                                      | 0/23 [00:00<?, ?it/s]
+Indexing dataset annotations:  30%|███████████████████████████████████████████▏                                                                                                  | 7/23 [00:00<00:00, 56.45it/s]
+Indexing dataset annotations:  70%|██████████████████████████████████████████████████████████████████████████████████████████████████                                           | 16/23 [00:00<00:00, 73.35it/s]
+Indexing dataset annotations: 100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 23/23 [00:00<00:00, 77.79it/s]
+The console stream is now moved to checkpoints\yolo_nas_s\RUN_20231226_154148_877573/console_Dec26_15_41_48.txt
+[2023-12-26 15:41:50] INFO - sg_trainer.py - Using EMA with params {'decay': 0.9, 'decay_type': 'threshold'}
+C:\Users\seojuneng\.conda\envs\mask\lib\site-packages\super_gradients\common\registry\registry.py:72: DeprecationWarning: Object name `linear_epoch_step` is now deprecated. Please replace it with `LinearEpochLRWarmup`.
+  warnings.warn(f"Object name `{name}` is now deprecated. Please replace it with `{deprecated_names[name]}`.", DeprecationWarning)
+C:\Users\seojuneng\.conda\envs\mask\lib\site-packages\psutil\_pswindows.py:274: DeprecationWarning: getargs: The 'u' format is deprecated. Use 'U' instead.
+  total, free = cext.disk_usage(path)

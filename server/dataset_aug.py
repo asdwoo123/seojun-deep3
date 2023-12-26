@@ -41,8 +41,15 @@ class DatasetAug:
                 ], random_order=True)
         
     def aug(self, fname, image, classIds, bbs):
+        boxes = []
+        for bs in bbs:
+            x1, y1, x2, y2 = bs
+            boxes.append(
+                BoundingBox(x1=x1, y1=y1, x2=x2, y2=y2)
+            )
+        bounding_boxes = BoundingBoxesOnImage(boxes, shape=image.shape)
         for i in range(self.aug_count):
-            ima_aug, bbs_aug = self.seq(image=image, bounding_boxes=bbs)
+            ima_aug, bbs_aug = self.seq(image=image, bounding_boxes=bounding_boxes)
             ranSample = random.randrange(1, 4)
             if ranSample == 1:
                 draw_ima = bbs_aug.draw_on_image(ima_aug, size=2)

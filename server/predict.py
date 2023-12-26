@@ -3,6 +3,7 @@ import cv2 as cv
 
 class PredictThread(threading.Thread):
     def __init__(self, model, stream_url, predict_image):
+        super().__init__()
         self.model = model
         self.predict_image = predict_image
         self.prediction_lst = []
@@ -18,7 +19,7 @@ class PredictThread(threading.Thread):
                 break
 
             count += 1
-            if count == 10:
+            if count == 10 and self.model is not None:
                 output = self.model.predict(frame, conf=0.7)
                 self.prediction_lst = output._images_prediction_lst
                 count = 0
