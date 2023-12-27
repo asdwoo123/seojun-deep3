@@ -3,15 +3,16 @@ from flask_cors import CORS
 from flask_socketio import SocketIO, emit
 import numpy as np
 import cv2 as cv
-from utilities import delete_prev_dataset, generate_dataset_folder, create_array, searchFolderNames, getModelClasses
+from utilities import delete_prev_dataset, generate_dataset_folder, create_array, searchFolderNames, getModelClasses, getModel
 import os
-# import torch
+import torch
 import sys
-# from super_gradients.training import models
-# from dataset_aug import DatasetAug
-# from yolo_nas_train import YoloNasTrain
-# from predict import PredictThread
+from super_gradients.training import models
+from dataset_aug import DatasetAug
+from yolo_nas_train import YoloNasTrain, YoloNasThread
+from predict import PredictThread
 
+print('reset!')
 image_path = '../src/assets/sample.jpg'
 image = cv.imread(image_path)
 image = cv.resize(image, (640, 640))
@@ -22,24 +23,17 @@ stream_url = 'http://192.168.0.178:3000/camera/stream'
 model_name = 'yolo_nas_s'
 checkpoint_list = searchFolderNames(f'{checkpoints_dir}/{model_name}')
 default_checkpoint = checkpoint_list[0] if len(checkpoint_list) > 0 else None
-getModelClasses(checkpoints_dir, model_name, default_checkpoint)
+predict_classes = getModelClasses(checkpoints_dir, model_name, default_checkpoint)
 
-sys.exit()
 device = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu")
-predict_num_classes = 1
-predict_model = models.get(
-    model_name=model_name,
-    checkpoint_path=f'{checkpoints_dir}/{model_name}/{checkpoint_list[0]}/ckpt_best.pth',
-    num_classes=predict_num_classes
-).to(device) if len(checkpoint_list) > 0 else None
+predict_model = getModel(checkpoints_dir, model_name, default_checkpoint, len(predict_classes), device)
 
-EPOCHS = 100
+EPOCHS = 1
 BATCH_SIZE = 2
 WORKERS = 1
-train_classes = []
+train_classes = ['0']
 
 datasetAug = DatasetAug(dataset_dir)
-yoloNasTrain = YoloNasTrain(dataset_dir, checkpoints_dir, device)
 
 generate_dataset_folder(dataset_dir)
 app = Flask(__name__)
@@ -75,6 +69,10 @@ def change_model(name):
         checkpoint_path=f'checkpoints/{model_name}/{name}/ckpt_best.pth',
         num_classes=1
     ).to(device)
+    classes = getModelClasses(checkpoints_dir, model_name, name)
+    predict_model = getModel(
+        checkpoints_dir, model_name, name, len(classes), device
+    )
 
 def get_predict():
     while True:
@@ -112,6 +110,8 @@ def generate_dataset(data):
         datasetAug.aug(f'data{index}', img, classIds, bbs)
         emit('percent', (100 / len(data)) * (index + 1))
 
+YoloNasThread = YoloNasThread(dataset_dir, checkpoints_dir, device, EPOCHS, BATCH_SIZE, WORKERS, train_classes)
+YoloNasThread.daemon = True
 
 @socketio.on('train')
 def on_train(json):
@@ -120,7 +120,7 @@ def on_train(json):
     emit('step', 1)
     generate_dataset(json['data'])
     emit('step', 2)
-    yoloNasTrain.train(EPOCHS, BATCH_SIZE, WORKERS, train_classes)
+    YoloNasThread.start()
     emit('step', 3)
 
 predict_thread = PredictThread(predict_model, stream_url, predict_image)
@@ -128,4 +128,5 @@ predict_thread.daemon = True
 predict_thread.start()
 
 
-socketio.run(app, port=5000, host='0.0.0.0')
+if __name__ == '__main__':
+    socketio.run(app, port=5000, host='0.0.0.0')
